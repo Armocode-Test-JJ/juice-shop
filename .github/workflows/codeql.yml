@@ -1,0 +1,100 @@
+# This workflow is designed for the Juice Shop repository to run CodeQL analysis
+# on different file categories, specifically source code and test files.
+# It creates separate jobs for each category to ensure that CodeQL alerts
+# are clearly distinguished in the GitHub security tab.
+
+name: "CodeQL Analysis"
+
+on:
+  # Trigger the workflow on push events to the 'main' branch
+  push:
+    branches: [ "main" ]
+  
+  # Trigger the workflow on pull request events to the 'main' branch
+  pull_request:
+    branches: [ "main" ]
+  
+  # Schedule a weekly run for a regular security scan
+  schedule:
+    - cron: '30 1 * * 0' # Runs at 1:30 AM UTC every Sunday
+
+jobs:
+  analyze-source:
+    # This job analyzes the main source code of the application.
+    name: Analyze Source Code
+    runs-on: ubuntu-latest
+    
+    # We grant the necessary permissions for CodeQL to write results
+    # and read repository contents.
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Initialize CodeQL for JavaScript/TypeScript
+        uses: github/codeql-action/init@v3
+        with:
+          # The Juice Shop is a Node.js application, so we target the
+          # javascript-typescript language pack.
+          languages: 'javascript-typescript'
+          
+          # We use the 'paths' filter to restrict this job's analysis to
+          # the main source code directories, excluding test files.
+          paths: |
+            lib/
+            frontend/
+            routes/
+            models/
+            data/
+
+      # For JavaScript, 'autobuild' is not strictly necessary as it's
+      # a non-compiled language, but it's a good practice to include.
+      - name: Autobuild (no-op for JS)
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis for Source
+        uses: github/codeql-action/analyze@v3
+        with:
+          # This SARIF category will be used to label the alerts in the
+          # GitHub security tab, allowing you to easily identify issues
+          # coming from the application's source code.
+          sarif-category: 'source-code-analysis'
+
+  analyze-tests:
+    # This job specifically analyzes the test files.
+    name: Analyze Test Files
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Initialize CodeQL for JavaScript/TypeScript
+        uses: github/codeql-action/init@v3
+        with:
+          languages: 'javascript-typescript'
+          
+          # We use the 'paths' filter to specifically target the 'test'
+          # directory to analyze only the test files.
+          paths: |
+            test/
+
+      - name: Autobuild (no-op for JS)
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis for Tests
+        uses: github/codeql-action/analyze@v3
+        with:
+          # This SARIF category will label alerts as coming from the
+          # test suite, helping you to distinguish them from
+          # production code issues.
+          sarif-category: 'test-code-analysis'
