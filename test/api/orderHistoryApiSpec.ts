@@ -125,8 +125,7 @@ describe('/rest/order-history/:id/delivery-status', () => {
     return frisby.post(REST_URL + '/user/login', {
       headers: jsonHeader,
       body: {
-        email: 'jim@' + config.get<string>('application.domain'),
-        password: 'ncc-1701'
+        
       }
     })
       .expect('status', 200)
